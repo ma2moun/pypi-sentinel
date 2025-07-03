@@ -1,1 +1,33 @@
+name: Daily PyPI harvest
+
+on:
+  schedule:
+    - cron: '0 2 * * *'          # 02:00 UTC daily
+  workflow_dispatch:             # run by hand when needed
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install deps
+        run: pip install --quiet feedparser requests
+
+      - name: Run harvester
+        run: python scripts/harvest.py
+
+      - name: Commit & push results
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: 'ci: daily PyPI update'
+          branch: ${{ github.ref }}        # pushes back to same branch
+          commit_user_name: 'GitHub Actions'
+          commit_user_email: 'actions@github.com'
 
