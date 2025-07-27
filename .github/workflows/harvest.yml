@@ -19,6 +19,10 @@ jobs:
           persist-credentials: true     # token stays in ~/.git-credentials
 
       # … install deps, run harvester …
+      - name: Rebase onto latest main
+        run: |
+          git fetch origin main
+          git rebase origin/main
 
       - name: Auto-commit results
         uses: stefanzweifel/git-auto-commit-action@v5
