@@ -5,6 +5,10 @@ on:
     - cron: '0 2 * * *'          # 02:00 UTC daily
   workflow_dispatch:             # run by hand when needed
 
+permissions:           # <-- add this (workflow-wide) or place it under the job
+  contents: write      # allow commits / pushes
+  id-token: read       # (optional) default for OIDC, safe to include
+
 jobs:
   harvest:
     runs-on: ubuntu-latest
