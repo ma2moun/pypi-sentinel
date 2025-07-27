@@ -31,3 +31,4 @@ jobs:
         with:
           branch: main
           commit_message: "ci: daily PyPI update"
+          push_options: '--force-with-lease'     # <-- add this line
