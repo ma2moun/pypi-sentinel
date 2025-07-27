@@ -1,37 +1,29 @@
 name: Daily PyPI harvest
-
 on:
   schedule:
-    - cron: '0 2 * * *'          # 02:00 UTC daily
-  workflow_dispatch:             # run by hand when needed
+    - cron: '17 2 * * *'
+  workflow_dispatch:
 
-permissions:           # <-- add this (workflow-wide) or place it under the job
-  contents: write      # allow commits / pushes
-  id-token: read       # (optional) default for OIDC, safe to include
+permissions:            # gives the default GITHUB_TOKEN write scope
+  contents: write        # <-- required
+  id-token: read
 
 jobs:
   harvest:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          ref: main
+          fetch-depth: 0
+          persist-credentials: true     # token stays in ~/.git-credentials
 
-      - name: Install deps
-        run: pip install --quiet feedparser requests
+      # … install deps, run harvester …
 
-      - name: Run harvester
-        run: python scripts/harvest.py
-
-      - name: Commit & push results
+      - name: Auto-commit results
         uses: stefanzweifel/git-auto-commit-action@v5
+        env:                         # be explicit: use the same token
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          commit_message: 'ci: daily PyPI update'
-          branch: ${{ github.ref }}        # pushes back to same branch
-          commit_user_name: 'GitHub Actions'
-          commit_user_email: 'actions@github.com'
-
+          branch: main
+          commit_message: "ci: daily PyPI update"
