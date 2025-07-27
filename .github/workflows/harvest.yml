@@ -31,4 +31,4 @@ jobs:
         with:
           branch: main
           commit_message: "ci: daily PyPI update"
-          pull_strategy: FETCH_REBASE
+          force_with_lease: true
