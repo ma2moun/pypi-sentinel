@@ -1,34 +1,49 @@
+# .github/workflows/harvest.yml
 name: Daily PyPI harvest
+
 on:
   schedule:
-    - cron: '17 2 * * *'
-  workflow_dispatch:
+    - cron: '17 2 * * *'      # runs every day at 02:17 UTC
+  workflow_dispatch:          # manual “Run workflow” button
 
-permissions:            # gives the default GITHUB_TOKEN write scope
-  contents: write        # <-- required
-  id-token: read
+###############################
+# Important: give write scope #
+###############################
+permissions:
+  contents: write             # allow this job to push commits
 
 jobs:
   harvest:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: stefanzweifel/git-auto-commit-action@v5
-        with:
-          ref: main
-          fetch-depth: 2
-          persist-credentials: true     # token stays in ~/.git-credentials
+    # 1. Get the latest main branch (not detached)
+    - uses: actions/checkout@v4
+      with:
+        ref: main
+        fetch-depth: 0
+        persist-credentials: true   # keep the token in ~/.git-credentials
 
-      # … install deps, run harvester …
-      - name: Rebase onto latest main
-        run: |
-          git fetch origin main
-          git rebase origin/main
+    # 2. Set up Python (adjust version if needed)
+    - uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
 
-      - name: Auto-commit results
-        uses: stefanzweifel/git-auto-commit-action@v5
-        env:                         # be explicit: use the same token
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          branch: main
-          commit_message: "ci: daily PyPI update"
-          push_options: '--force-with-lease'
+    # 3. Install requirements
+    - name: Install dependencies
+      run: pip install -r requirements.txt --quiet --retries 6 --timeout 30
+
+    # 4. Run your harvesting script
+    - name: Run harvester
+      run: python harvest.py        # replace with collect_pypi.py if different
+
+    # 5. Commit & push the results
+    - name: Auto-commit results
+      uses: stefanzweifel/git-auto-commit-action@v5
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # explicit is safer
+      with:
+        branch: main
+        commit_message: 'ci: daily PyPI update'
+        force_with_lease: true      # pushes with --force-with-lease
