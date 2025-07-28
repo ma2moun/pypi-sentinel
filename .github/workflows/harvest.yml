@@ -3,37 +3,40 @@ name: Daily PyPI harvest
 
 on:
   schedule:
-    - cron: '17 2 * * *'     # 02:17 UTC every day
-  workflow_dispatch:
+    - cron: '17 2 * * *'        # 02:17 UTC daily
+  workflow_dispatch:            # manual “Run workflow” button
 
+##############################################
+# Give the default GITHUB_TOKEN write access #
+##############################################
 permissions:
-  contents: write            # allow the job to push commits
+  contents: write
 
 jobs:
   harvest:
     runs-on: ubuntu-latest
 
     steps:
-    # --- 1. check out the real branch, not detached ---
+    # 1 – checkout real branch (not detached)
     - uses: actions/checkout@v4
       with:
         ref: main
-        fetch-depth: 0        # full history
-        persist-credentials: true
+        fetch-depth: 0           # full history
 
-    # --- 2. set up Python & run your harvester ---
+    # 2 – Python setup
     - uses: actions/setup-python@v5
       with:
         python-version: '3.12'
         cache: pip
 
+    # 3 – install deps & run your collector
     - name: Install deps
       run: pip install -r requirements.txt --quiet --retries 6 --timeout 30
 
     - name: Run harvester
-      run: python harvest.py            # or collect_pypi.py
+      run: python harvest.py     # ← change if your script is named differently
 
-    # --- 3. commit & re-base-then-push ---
+    # 4 – commit **and re-base before push** (built-in option)
     - name: Commit updated data
       uses: stefanzweifel/git-auto-commit-action@v6
       env:
@@ -41,4 +44,5 @@ jobs:
       with:
         branch: main
         commit_message: 'ci: daily PyPI update'
-        pull_strategy: FETCH_REBASE      # <-- key line: rebases before push
+        pull_strategy: REBASE        # <- rebase onto latest origin/main
+        # no need for force_with_lease when you rebase
