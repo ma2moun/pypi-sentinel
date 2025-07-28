@@ -3,47 +3,42 @@ name: Daily PyPI harvest
 
 on:
   schedule:
-    - cron: '17 2 * * *'      # runs every day at 02:17 UTC
-  workflow_dispatch:          # manual “Run workflow” button
+    - cron: '17 2 * * *'     # 02:17 UTC every day
+  workflow_dispatch:
 
-###############################
-# Important: give write scope #
-###############################
 permissions:
-  contents: write             # allow this job to push commits
+  contents: write            # allow the job to push commits
 
 jobs:
   harvest:
     runs-on: ubuntu-latest
 
     steps:
-    # 1. Get the latest main branch (not detached)
+    # --- 1. check out the real branch, not detached ---
     - uses: actions/checkout@v4
       with:
         ref: main
-        fetch-depth: 0
-        persist-credentials: true   # keep the token in ~/.git-credentials
+        fetch-depth: 0        # full history
+        persist-credentials: true
 
-    # 2. Set up Python (adjust version if needed)
+    # --- 2. set up Python & run your harvester ---
     - uses: actions/setup-python@v5
       with:
         python-version: '3.12'
-        cache: 'pip'
+        cache: pip
 
-    # 3. Install requirements
-    - name: Install dependencies
+    - name: Install deps
       run: pip install -r requirements.txt --quiet --retries 6 --timeout 30
 
-    # 4. Run your harvesting script
     - name: Run harvester
-      run: python harvest.py        # replace with collect_pypi.py if different
+      run: python harvest.py            # or collect_pypi.py
 
-    # 5. Commit & push the results
-    - name: Auto-commit results
-      uses: stefanzweifel/git-auto-commit-action@v5
+    # --- 3. commit & re-base-then-push ---
+    - name: Commit updated data
+      uses: stefanzweifel/git-auto-commit-action@v6
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}   # explicit is safer
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         branch: main
         commit_message: 'ci: daily PyPI update'
-        force_with_lease: true      # pushes with --force-with-lease
+        pull_strategy: FETCH_REBASE      # <-- key line: rebases before push
