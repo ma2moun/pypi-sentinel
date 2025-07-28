@@ -12,10 +12,10 @@ jobs:
   harvest:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: stefanzweifel/git-auto-commit-action@v5
         with:
           ref: main
-          fetch-depth: 0
+          fetch-depth: 2
           persist-credentials: true     # token stays in ~/.git-credentials
 
       # … install deps, run harvester …
@@ -31,4 +31,4 @@ jobs:
         with:
           branch: main
           commit_message: "ci: daily PyPI update"
-          force_with_lease: true
+          push_options: '--force-with-lease'
