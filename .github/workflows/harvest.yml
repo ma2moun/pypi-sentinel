@@ -1,6 +1,5 @@
 # .github/workflows/harvest.yml
 name: Daily PyPI harvest
-
 on:
   schedule:
     - cron: '17 2 * * *'
@@ -18,16 +17,17 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - uses: actions/setup-python@v5   # cache parameter removed
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      # (skip pip install entirely if you have no deps)
-      # - name: Install deps
-      #   run: pip install -r requirements.txt
+      # ---------- install the required packages ----------
+      - name: Install dependencies
+        run: pip install --quiet feedparser requests       # <─ new step
 
+      # ---------- run your script ----------
       - name: Run harvester
-        run: python scripts/harvest.py
+        run: python scripts/harvest.py                    # adjust path if needed
 
       - name: Commit updated data
         uses: stefanzweifel/git-auto-commit-action@v6
@@ -36,4 +36,4 @@ jobs:
         with:
           branch: main
           commit_message: 'ci: daily PyPI update'
-          pull_strategy: REBASE
+          pull_strategy: REBASE        # or: force_with_lease: true
